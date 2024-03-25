@@ -158,7 +158,8 @@ class Forest(IsaacEnv):
         from pxr import PhysxSchema, UsdPhysics
         from omni_drones.utils.poisson_disk import poisson_disk_sampling
 
-        drone_model = MultirotorBase.REGISTRY[self.cfg.task.drone_model]
+        # 初始化无人机
+        drone_model = MultirotorBase.REGISTRY[self.cfg.task.drone_model] # drone model class
         cfg = drone_model.cfg_cls(force_sensor=self.cfg.task.force_sensor)
         self.drone: MultirotorBase = drone_model(cfg=cfg)
 
@@ -217,7 +218,7 @@ class Forest(IsaacEnv):
         return ["/World/ground"]
 
     def _set_specs(self):
-        drone_state_dim = self.drone.state_spec.shape[-1]
+        drone_state_dim = self.drone.state_spec.shape[-1] # 无人机的state dimension + motor数量
         observation_dim = drone_state_dim
 
         self.observation_spec = CompositeSpec({
@@ -231,7 +232,7 @@ class Forest(IsaacEnv):
         }, shape=[self.num_envs], device=self.device)
         self.action_spec = CompositeSpec({
             "agents": CompositeSpec({
-                "action": self.drone.action_spec,
+                "action": self.drone.action_spec, # number of motor
             })
         }).expand(self.num_envs).to(self.device)
         self.reward_spec = CompositeSpec({
@@ -243,7 +244,7 @@ class Forest(IsaacEnv):
             "done": DiscreteTensorSpec(2, (1,), dtype=torch.bool),
             "terminated": DiscreteTensorSpec(2, (1,), dtype=torch.bool),
             "truncated": DiscreteTensorSpec(2, (1,), dtype=torch.bool),
-        }).expand(self.num_envs).to(self.device)
+        }).expand(self.num_envs).to(self.device) 
         self.agent_spec["drone"] = AgentSpec(
             "drone", 1,
             observation_key=("agents", "observation"),

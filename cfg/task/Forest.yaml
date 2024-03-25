@@ -20,5 +20,6 @@ lidar_range: 4.
 lidar_vfov: [-10., 20.]
 
 action_transform: null
+# action_transform: velocity
 
 reward_effort_weight: 0.1

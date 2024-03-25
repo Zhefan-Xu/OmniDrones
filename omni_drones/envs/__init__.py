@@ -31,7 +31,6 @@ from .dragon import DragonHover
 from .rearrange import Rearrange
 from .isaac_env import IsaacEnv
 
-print("here111")
 try:
     from .pinball import Pinball
     from .forest import Forest

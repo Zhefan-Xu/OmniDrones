@@ -203,16 +203,17 @@ def main(cfg):
     print(OmegaConf.to_yaml(cfg))
     
 
-    # 初始化simulation环境，
-    from omni_drones.envs.isaac_env import IsaacEnv
-    return
-    env_class = IsaacEnv.REGISTRY[cfg.task.name]
-    base_env = env_class(cfg, headless=cfg.headless)
+    # 初始化simulation环境
+    from omni_drones.envs.isaac_env import IsaacEnv # 会收集所有训练环境
+    env_class = IsaacEnv.REGISTRY[cfg.task.name] # 训练的任务task的class: Forest class
+    base_env = env_class(cfg, headless=cfg.headless) # 创建训练的环境
 
     transforms = [InitTracker()]
 
     # a CompositeSpec is by deafault processed by a entity-based encoder
     # ravel it to use a MLP encoder instead
+    # 把环境的传入的input变成netowrk能使用的input (flatten + concat)
+    
     if cfg.task.get("ravel_obs", False):
         transform = ravel_composite(base_env.observation_spec, ("agents", "observation"))
         transforms.append(transform)
@@ -232,6 +233,7 @@ def main(cfg):
 
     # optionally discretize the action space or use a controller
     action_transform: str = cfg.task.get("action_transform", None)
+    # print("check action tranform: ", action_transform)
     if action_transform is not None:
         if action_transform.startswith("multidiscrete"):
             nbins = int(action_transform.split(":")[1])
@@ -262,6 +264,7 @@ def main(cfg):
     env = TransformedEnv(base_env, Compose(*transforms)).train()
     env.set_seed(cfg.seed)
 
+    # RL policy
     policy = PPOPolicy(
         cfg.algo, 
         env.observation_spec, 
