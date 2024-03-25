@@ -1,8 +1,8 @@
 # hydra.job.chdir: false
 
-headless: false
+headless: false # 是否显示isaac sim
 
-sim: ${task.sim}
+sim: ${task.sim} 
 env: ${task.env}
 
 total_frames: 250_000_000

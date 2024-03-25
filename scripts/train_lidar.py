@@ -183,16 +183,24 @@ class PPOPolicy(TensorDictModuleBase):
 
 
 FILE_PATH = os.path.dirname(__file__)
+# Config File: 
+# 1: ./train.yaml  
+# 2: ../cfg/train.yaml
+# 3. ../cfg/task/Forest.yaml
+
 
 @hydra.main(config_path=FILE_PATH, config_name="train", version_base=None)
 def main(cfg):
+    # OmageConf使用python eval计算config中需要计算的部分
     OmegaConf.register_new_resolver("eval", eval)
     OmegaConf.resolve(cfg)
     OmegaConf.set_struct(cfg, False)
+    
     simulation_app = init_simulation_app(cfg)
     run = init_wandb(cfg)
     setproctitle(run.name)
     print(OmegaConf.to_yaml(cfg))
+    
 
     from omni_drones.envs.isaac_env import IsaacEnv
 
