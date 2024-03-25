@@ -192,10 +192,11 @@ def main(cfg):
     simulation_app = init_simulation_app(cfg)
     run = init_wandb(cfg)
     setproctitle(run.name)
-    print(OmegaConf.to_yaml(cfg))
+    # print(OmegaConf.to_yaml(cfg))
 
+    # 初始化simulation环境，
     from omni_drones.envs.isaac_env import IsaacEnv
-
+    return
     env_class = IsaacEnv.REGISTRY[cfg.task.name]
     base_env = env_class(cfg, headless=cfg.headless)
 
