@@ -64,7 +64,9 @@ class PPOPolicy(TensorDictModuleBase):
         )
         mlp = make_mlp([256, 256])
         
+        # input encoder
         self.encoder = TensorDictSequential(
+            #  [("agents", "observation", "lidar")]表示连续使用三次key，这里是对LIDARinput进行encode
             TensorDictModule(cnn, [("agents", "observation", "lidar")], ["_cnn_feature"]),
             CatTensors(["_cnn_feature", ("agents", "observation", "state")], "_feature", del_keys=False),
             TensorDictModule(mlp, ["_feature"], ["_feature"]),
@@ -140,7 +142,9 @@ class PPOPolicy(TensorDictModuleBase):
 
     def _update(self, tensordict: TensorDict):
         self.encoder(tensordict)
-        dist = self.actor.get_dist(tensordict)
+        # 1. get action distribution from the ppo actor
+        dist = self.actor.get_dist(tensordict) 
+        #. convert it into log probability
         log_probs = dist.log_prob(tensordict[("agents", "action")])
         entropy = dist.entropy()
 
@@ -260,7 +264,7 @@ def main(cfg):
             transforms.append(transform)
         elif not action_transform.lower() == "none":
             raise NotImplementedError(f"Unknown action transform: {action_transform}")
-    
+    # based env指的是原来的环境，env指的是变换后的环境
     env = TransformedEnv(base_env, Compose(*transforms)).train()
     env.set_seed(cfg.seed)
 
@@ -273,8 +277,8 @@ def main(cfg):
         device=base_env.device
     )
 
-    frames_per_batch = env.num_envs * int(cfg.algo.train_every)
-    total_frames = cfg.get("total_frames", -1) // frames_per_batch * frames_per_batch
+    frames_per_batch = env.num_envs * int(cfg.algo.train_every) # 环境数量（batch） x 每个环境每次训练的帧数（多少个time step？）
+    total_frames = cfg.get("total_frames", -1) // frames_per_batch * frames_per_batch # 总共多少frame/
     max_iters = cfg.get("max_iters", -1)
     eval_interval = cfg.get("eval_interval", -1)
     save_interval = cfg.get("save_interval", -1)
@@ -286,8 +290,8 @@ def main(cfg):
     episode_stats = EpisodeStats(stats_keys)
     collector = SyncDataCollector(
         env,
-        policy=policy,
-        frames_per_batch=frames_per_batch,
+        policy=policy, # PPO Training policy
+        frames_per_batch=frames_per_batch, # 
         total_frames=total_frames,
         device=cfg.sim.device,
         return_same_td=True,
@@ -355,7 +359,8 @@ def main(cfg):
     for i, data in enumerate(pbar):
         info = {"env_frames": collector._frames, "rollout_fps": collector._fps}
         episode_stats.add(data.to_tensordict())
-        
+        # print(data.to_tensordict())
+        # return
         if len(episode_stats) >= base_env.num_envs:
             stats = {
                 "train/" + (".".join(k) if isinstance(k, tuple) else k): torch.mean(v.float()).item() 
