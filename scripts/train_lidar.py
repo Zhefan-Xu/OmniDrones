@@ -64,24 +64,26 @@ class PPOPolicy(TensorDictModuleBase):
         )
         mlp = make_mlp([256, 256])
         
-        # input encoder
+        # input encoder: encoder主要的作用是把所有的input （LIDAR + states）提取成feature
         self.encoder = TensorDictSequential(
             #  [("agents", "observation", "lidar")]表示连续使用三次key，这里是对LIDARinput进行encode
             TensorDictModule(cnn, [("agents", "observation", "lidar")], ["_cnn_feature"]),
-            CatTensors(["_cnn_feature", ("agents", "observation", "state")], "_feature", del_keys=False),
+            CatTensors(["_cnn_feature", ("agents", "observation", "state")], "_feature", del_keys=False), # 将LiDAR的feature和无人机的stateconcatenate
             TensorDictModule(mlp, ["_feature"], ["_feature"]),
         ).to(self.device)
 
+        # Actor Network
         self.actor = ProbabilisticActor(
-            TensorDictModule(Actor(self.action_dim), ["_feature"], ["loc", "scale"]),
+            TensorDictModule(Actor(self.action_dim), ["_feature"], ["loc", "scale"]), # actor maps feature from encoder to loc (mean) and scale (standard deviation)
             in_keys=["loc", "scale"],
-            out_keys=[("agents", "action")],
+            out_keys=[("agents", "action")], # 将output存在agent：action下
             distribution_class=IndependentNormal,
             return_log_prob=True
         ).to(self.device)
 
+        # Critic Network
         self.critic = TensorDictModule(
-            nn.LazyLinear(1), ["_feature"], ["state_value"]
+            nn.LazyLinear(1), ["_feature"], ["state_value"] # 从feature到value
         ).to(self.device)
 
         self.encoder(fake_input)
@@ -92,7 +94,7 @@ class PPOPolicy(TensorDictModuleBase):
             if isinstance(module, nn.Linear):
                 nn.init.orthogonal_(module.weight, 0.01)
                 nn.init.constant_(module.bias, 0.)
-            
+        # 初始化weights
         self.actor.apply(init_)
         self.critic.apply(init_)
         
@@ -111,15 +113,21 @@ class PPOPolicy(TensorDictModuleBase):
     def train_op(self, tensordict: TensorDict):
         next_tensordict = tensordict["next"]
         with torch.no_grad():
-            next_tensordict = torch.vmap(self.encoder)(next_tensordict)
+            # 将下一个states所有的batch放入encoder，得到encoder的feature
+            next_tensordict = torch.vmap(self.encoder)(next_tensordict) # vmap: https://pytorch.org/docs/stable/generated/torch.vmap.html for function over some dimension inputs
+            # 通过encoder的feature获取S'的value
             next_values = self.critic(next_tensordict)["state_value"]
+        # 下一个states的reward
         rewards = tensordict[("next", "agents", "reward")]
+        # 下一个states是否为terminal state
         dones = tensordict[("next", "terminated")]
 
+        # 当前的所有batchstate value （这里的value实际上是normalized value需要进一步的denormalize）
         values = tensordict["state_value"]
         values = self.value_norm.denormalize(values)
         next_values = self.value_norm.denormalize(next_values)
 
+        # GAE: Generalized Advantage Estimation
         adv, ret = self.gae(rewards, dones, values, next_values)
         adv_mean = adv.mean()
         adv_std = adv.std()
@@ -127,9 +135,11 @@ class PPOPolicy(TensorDictModuleBase):
         self.value_norm.update(ret)
         ret = self.value_norm.normalize(ret)
 
+        # 加入advantage以及return
         tensordict.set("adv", adv)
         tensordict.set("ret", ret)
 
+        # Training
         infos = []
         for epoch in range(self.cfg.ppo_epochs):
             batch = make_batch(tensordict, self.cfg.num_minibatches)
@@ -152,7 +162,7 @@ class PPOPolicy(TensorDictModuleBase):
         ratio = torch.exp(log_probs - tensordict["sample_log_prob"]).unsqueeze(-1)
         surr1 = adv * ratio
         surr2 = adv * ratio.clamp(1.-self.clip_param, 1.+self.clip_param)
-        policy_loss = - torch.mean(torch.min(surr1, surr2)) * self.action_dim
+        policy_loss = - torch.mean(torch.min(surr1, surr2)) * self.action_dim # actor loss
         entropy_loss = - self.entropy_coef * torch.mean(entropy)
 
         b_values = tensordict["state_value"]
