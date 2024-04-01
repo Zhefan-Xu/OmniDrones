@@ -298,7 +298,7 @@ class MultirotorBase(RobotBase):
             quat_rotate_inverse(self.rot, vel_w[..., :3]),
             quat_rotate_inverse(self.rot, vel_w[..., 3:])
         ], dim=-1)
-        self.vel_w[:] = vel_w
+        self.vel_w[:] = vel_w # change by reference, self.vel also ref this
         self.vel_b[:] = vel_b
         
         # acc = self.acc.lerp((vel - self.vel) / self.dt, self.alpha)

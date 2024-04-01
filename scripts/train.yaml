@@ -4,7 +4,7 @@ hydra:
   # see https://hydra.cc/docs/advanced/search_path/
    - file://../cfg
 
-headless: true # 是否显示isaac GUI
+headless: false # 是否显示isaac GUI
 
 sim: ${task.sim} # 需要输入当前的task名：例如python xxxx task=Forest， 会找到cfg/task/Forest.yaml
 env: ${task.env} # 同样在Forest.yaml中有env变量

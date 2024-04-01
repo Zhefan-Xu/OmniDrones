@@ -288,7 +288,9 @@ class Forest(IsaacEnv):
 
     def _pre_sim_step(self, tensordict: TensorDictBase):
         actions = tensordict[("agents", "action")]
-        self.effort = self.drone.apply_action(actions.unsqueeze(1))
+        # print("final action: ", actions)
+        # self.effort = self.drone.apply_action(actions.unsqueeze(1))
+        self.effort = self.drone.apply_action(actions)
 
     def _post_sim_step(self, tensordict: TensorDictBase):
         self.lidar.update(self.dt) 

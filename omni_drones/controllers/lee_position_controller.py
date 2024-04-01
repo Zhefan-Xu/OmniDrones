@@ -121,7 +121,7 @@ class LeePositionController(nn.Module):
         target_yaw: torch.Tensor=None,
         body_rate: bool=False
     ):
-        batch_shape = root_state.shape[:-1]
+        batch_shape = root_state.shape[:-1] # 到最后一个shape之前的shape
         device = root_state.device
         if target_pos is None:
             target_pos = root_state[..., :3]
@@ -130,7 +130,13 @@ class LeePositionController(nn.Module):
         if target_vel is None:
             target_vel = torch.zeros(*batch_shape, 3, device=device)
         else:
-            target_vel = target_vel.expand(batch_shape+(3,))
+            # print("target vel: ", target_vel)
+            # print("target vel size: ", target_vel.size())
+            # print("robot state.shape: ", root_state.shape)
+            # print("batch_shape: ", root_state.shape[:-1])
+            # print("batch_shape+(3,): ", batch_shape+(3,))
+            # target_vel = target_vel.expand(batch_shape+(3,))
+            pass
         if target_acc is None:
             target_acc = torch.zeros(*batch_shape, 3, device=device)
         else:
@@ -140,8 +146,11 @@ class LeePositionController(nn.Module):
         else:
             if not target_yaw.shape[-1] == 1:
                 target_yaw = target_yaw.unsqueeze(-1)
-            target_yaw = target_yaw.expand(batch_shape+(1,))
+            # target_yaw = target_yaw.expand(batch_shape+(1,))
+            # target_yaw = target_yaw.expand()
         
+        # print("input state: ", root_state.reshape(-1, 13).size())
+        # print("target vel input: ", target_vel.reshape(-1, 3).size())
         cmd = self._compute(
             root_state.reshape(-1, 13),
             target_pos.reshape(-1, 3),

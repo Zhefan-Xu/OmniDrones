@@ -118,12 +118,12 @@ class PPOPolicy(TensorDictModuleBase):
             # 通过encoder的feature获取S'的value
             next_values = self.critic(next_tensordict)["state_value"]
         # 下一个states的reward
-        rewards = tensordict[("next", "agents", "reward")]
+        rewards = tensordict[("next", "agents", "reward")] # shape [num_env, train_every (每隔多少step训一次？), 1]
         # 下一个states是否为terminal state
-        dones = tensordict[("next", "terminated")]
+        dones = tensordict[("next", "terminated")] # shape [num_env, 32, 1]
 
         # 当前的所有batchstate value （这里的value实际上是normalized value需要进一步的denormalize）
-        values = tensordict["state_value"]
+        values = tensordict["state_value"] # 在forward中记录 
         values = self.value_norm.denormalize(values)
         next_values = self.value_norm.denormalize(next_values)
 
@@ -151,20 +151,23 @@ class PPOPolicy(TensorDictModuleBase):
         return {k: v.item() for k, v in infos.items()}
 
     def _update(self, tensordict: TensorDict):
-        self.encoder(tensordict)
+        # print("my print in _update: ", tensordict)
+        self.encoder(tensordict) # 
         # 1. get action distribution from the ppo actor
-        dist = self.actor.get_dist(tensordict) 
+        dist = self.actor.get_dist(tensordict) # (batch size, feature)-> (batch size, number_of_actions)
         #. convert it into log probability
         log_probs = dist.log_prob(tensordict[("agents", "action")])
         entropy = dist.entropy()
 
-        adv = tensordict["adv"]
+        # standard actor loss
+        adv = tensordict["adv"] # calculated entropy
         ratio = torch.exp(log_probs - tensordict["sample_log_prob"]).unsqueeze(-1)
         surr1 = adv * ratio
         surr2 = adv * ratio.clamp(1.-self.clip_param, 1.+self.clip_param)
         policy_loss = - torch.mean(torch.min(surr1, surr2)) * self.action_dim # actor loss
-        entropy_loss = - self.entropy_coef * torch.mean(entropy)
+        entropy_loss = - self.entropy_coef * torch.mean(entropy) # this term is to encourage exploration
 
+        # standard cirtic loss
         b_values = tensordict["state_value"]
         b_returns = tensordict["ret"]
         values = self.critic(tensordict)["state_value"]
@@ -215,7 +218,6 @@ def main(cfg):
     setproctitle(run.name)
 
     print(OmegaConf.to_yaml(cfg))
-    
 
     # 初始化simulation环境
     from omni_drones.envs.isaac_env import IsaacEnv # 会收集所有训练环境
@@ -260,7 +262,8 @@ def main(cfg):
         elif action_transform == "velocity":
             from omni_drones.controllers import LeePositionController
             controller = LeePositionController(9.81, base_env.drone.params).to(base_env.device)
-            transform = VelController(torch.vmap(controller))
+            # transform = VelController(torch.vmap(controller))
+            transform = VelController(controller)
             transforms.append(transform)
         elif action_transform == "rate":
             from omni_drones.controllers import RateController as _RateController
@@ -368,6 +371,9 @@ def main(cfg):
     env.train()
     for i, data in enumerate(pbar):
         info = {"env_frames": collector._frames, "rollout_fps": collector._fps}
+
+        # print("My print: ", data.to_tensordict)
+        # return
         episode_stats.add(data.to_tensordict())
         # print(data.to_tensordict())
         # return

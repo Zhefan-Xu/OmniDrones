@@ -50,7 +50,7 @@ class GAE(nn.Module):
                 + self.gamma * next_value[:, step] * not_done[:, step] 
                 - value[:, step]
             )
-            advantages[:, step] = gae = delta + (self.gamma * self.lmbda * not_done[:, step] * gae)
+            advantages[:, step] = gae = delta + (self.gamma * self.lmbda * not_done[:, step] * gae) 
         returns = advantages + value
         return advantages, returns
 

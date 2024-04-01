@@ -36,7 +36,7 @@ from tensordict import TensorDict
 
 from omni_drones.utils.math import quaternion_to_euler
 from .config import FisheyeCameraCfg, PinholeCameraCfg
-
+import math
 class Camera:
     """
     Viewport camera used for visualization purpose.
@@ -69,6 +69,7 @@ class Camera:
         if isinstance(self.device, str) and "cuda" in self.device:
             self.device = self.device.split(":")[0]
         self.annotators = []
+        self.prim_paths = prim_paths
 
     def spawn(
         self, 
@@ -192,6 +193,26 @@ class Camera:
             # get attribute from the class
             prim.GetAttribute(param).Set(param_value)
 
+    def update_camera_orientation(self, prim_path: str, pitch: float, yaw: float, roll: float):
+        # Convert degrees to radians
+        pitch_rad = math.radians(pitch)
+        yaw_rad = math.radians(yaw)
+        roll_rad = math.radians(roll)
+
+        # Create Gf.Quatf objects for each rotation
+        rx = Gf.Rotation(Gf.Vec3d(1, 0, 0), pitch_rad)
+        ry = Gf.Rotation(Gf.Vec3d(0, 1, 0), roll_rad)
+        rz = Gf.Rotation(Gf.Vec3d(0, 0, 1), yaw_rad)
+
+        # Combine the quaternions
+        matrix = rx * ry * rz
+        quat = Gf.Quatd(matrix.GetQuat())
+        # Retrieve the Prim at the specified path
+        prim = prim_utils.get_prim_at_path(prim_path)
+
+        # Update the orientation attribute
+        prim.GetAttribute("xformOp:orient").Set(quat)
+        
     def update_camera_orientation(self, prim_path: str, pitch: float, yaw: float, roll: float):
         # Convert degrees to radians
         pitch_rad = math.radians(pitch)

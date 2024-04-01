@@ -225,14 +225,23 @@ class VelController(Transform):
         return input_spec
     
     def _inv_call(self, tensordict: TensorDictBase) -> TensorDictBase:
+        # print("tensordict size: ", tensordict.shape)
+        # print("tensor dict: ", tensordict)
         drone_state = tensordict[("info", "drone_state")][..., :13]
+        # print("drone state shape: ", drone_state.shape)
+
         action = tensordict[self.action_key]
         target_vel, target_yaw = action.split([3, 1], -1)
+        target_vel = target_vel.unsqueeze(1)
+        target_yaw = target_yaw.unsqueeze(1)
+        # print("droen vel shape: ", target_vel.shape)
+        # print("target vel: ", target_vel)
         cmds = self.controller(
             drone_state, 
             target_vel=target_vel, 
             target_yaw=target_yaw*torch.pi
         )
+
         torch.nan_to_num_(cmds, 0.)
         tensordict.set(self.action_key, cmds)
         return tensordict

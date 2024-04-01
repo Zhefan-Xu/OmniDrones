@@ -251,7 +251,7 @@ class PPOPolicy(TensorDictModuleBase):
 
 
 def make_batch(tensordict: TensorDict, num_minibatches: int):
-    tensordict = tensordict.reshape(-1)
+    tensordict = tensordict.reshape(-1) # 把所有的前两个dimension合并成为batch
     perm = torch.randperm(
         (tensordict.shape[0] // num_minibatches) * num_minibatches,
         device=tensordict.device,
