@@ -200,6 +200,9 @@ def ravel_composite(
         key = (key,)
     if isinstance(composite_spec, CompositeSpec):
         in_keys = [k for k in spec.keys(True, True) if k[:len(key)] == key]
+
+        # print("my print: ", in_keys)
+        # ('agents', 'intrinsics', 'mass'), ('agents', 'intrinsics', 'inertia'), ('agents', 'intrinsics', 'com'), ('agents', 'intrinsics', 'KF'), ('agents', 'intrinsics', 'KM'), ('agents', 'intrinsics', 'tau_up'), ('agents', 'intrinsics', 'tau_down'), ('agents', 'intrinsics', 'drag_coef')]
         return Compose(
             FlattenObservation(start_dim, end_dim, in_keys),
             CatTensors(in_keys, out_key=key, del_keys=False)

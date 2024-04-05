@@ -125,33 +125,36 @@ class IsaacEnv(EnvBase):
         self._is_closed = False
         # set camera view
         # create cloner for duplicating the scenes
-        cloner = GridCloner(spacing=self.cfg.env.env_spacing)
-        cloner.define_base_env("/World/envs")
+        cloner = GridCloner(spacing=self.cfg.env.env_spacing) # This class provides a set of simple APIs to make duplication of objects simple. Objects can be cloned using this class to create copies of the same object, placed at user-specified locations in the scene.
+        cloner.define_base_env("/World/envs") # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.cloner/docs/index.html?highlight=gridcloner
         # create the xform prim to hold the template environment
         if not prim_utils.is_prim_path_valid(self.template_env_ns):
-            prim_utils.define_prim(self.template_env_ns)
+            prim_utils.define_prim(self.template_env_ns) # if env0 is not defined, define it
         # setup single scene
-        global_prim_paths = self._design_scene()
+        global_prim_paths = self._design_scene() # in the child class, init robot (1), light, terrain (with number of env)
         # check if any global prim paths are defined
         if global_prim_paths is None:
             global_prim_paths = list()
         # clone the scenes into the namespace "/World/envs" based on template namespace
         self.envs_prim_paths = cloner.generate_paths(
-            self.env_ns + "/env", self.num_envs
-        )
+            self.env_ns + "/env", self.num_envs # for each env clone all of them
+        )   # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.cloner/docs/index.html?highlight=cloner#omni.isaac.cloner.cloner.Cloner.generate_paths
         assert len(self.envs_prim_paths) == self.num_envs
         self.envs_positions = cloner.clone(
-            source_prim_path=self.template_env_ns,
-            prim_paths=self.envs_prim_paths,
+            source_prim_path=self.template_env_ns, # /World/envs/env_0 原始被复制的prim，有一台无人机
+            prim_paths=self.envs_prim_paths,  # 生成的path /World/envs/env_0-num
             replicate_physics=self.cfg.sim.replicate_physics,
         )
         # convert environment positions to torch tensor
         self.envs_positions = torch.tensor(
             self.envs_positions, dtype=torch.float, device=self.device
         )
+        # print("all env positions: ", self.envs_positions)
         # find the environment closest to the origin for visualization
         self.central_env_idx = self.envs_positions.norm(dim=-1).argmin()
+        
         central_env_pos = self.envs_positions[self.central_env_idx].cpu().numpy()
+        # print("central env pos: ", central_env_pos)
         set_camera_view(
             eye=central_env_pos + np.asarray(self.cfg.viewer.eye), 
             target=central_env_pos + np.asarray(self.cfg.viewer.lookat)

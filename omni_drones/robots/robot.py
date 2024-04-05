@@ -110,7 +110,7 @@ class RobotBase(abc.ABC):
         if orientations is None:
             orientations = [None for _ in range(n)]
 
-        if prim_paths is None:
+        if prim_paths is None: 
             prim_paths = [f"{TEMPLATE_PRIM_PATH}/{self.name}_{i}" for i in range(n)]
 
         if not len(translations) == len(prim_paths):
@@ -120,7 +120,7 @@ class RobotBase(abc.ABC):
         for prim_path, translation, orientation in zip(prim_paths, translations, orientations):
             if prim_utils.is_prim_path_valid(prim_path):
                 raise RuntimeError(f"Duplicate prim at {prim_path}.")
-            prim = self._create_prim(prim_path, translation, orientation)
+            prim = self._create_prim(prim_path, translation, orientation) # set usd and prim
             # apply rigid body properties
             kit_utils.set_nested_rigid_body_properties(
                 prim_path,

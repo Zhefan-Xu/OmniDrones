@@ -224,7 +224,8 @@ def main(cfg):
     env_class = IsaacEnv.REGISTRY[cfg.task.name] # 训练的任务task的class: Forest class
     base_env = env_class(cfg, headless=cfg.headless) # 创建训练的环境
 
-    transforms = [InitTracker()]
+    # This transform populates the step/reset tensordict with a reset tracker entry that is set to True whenever reset() is called.
+    transforms = [InitTracker()] # https://pytorch.org/rl/reference/generated/torchrl.envs.transforms.InitTracker.html
 
     # a CompositeSpec is by deafault processed by a entity-based encoder
     # ravel it to use a MLP encoder instead
@@ -233,16 +234,19 @@ def main(cfg):
     if cfg.task.get("ravel_obs", False):
         transform = ravel_composite(base_env.observation_spec, ("agents", "observation"))
         transforms.append(transform)
+        print("ravel obsrevation")
     if cfg.task.get("ravel_obs_central", False):
         transform = ravel_composite(base_env.observation_spec, ("agents", "observation_central"))
         transforms.append(transform)
+        print("ravel observation central")
     if (
-        cfg.task.get("flatten_intrinsics", True)
+        cfg.task.get("flatten_intrinsics", True) # no flatten intrinsic so flatten it
         and ("agents", "intrinsics") in base_env.observation_spec.keys(True)
         and isinstance(base_env.observation_spec[("agents", "intrinsics")], CompositeSpec)
     ):
+        # actually here
         transforms.append(ravel_composite(base_env.observation_spec, ("agents", "intrinsics"), start_dim=-1))
-
+        print("flatten intrinsics")
     # if cfg.task.get("history", False):
     #     # transforms.append(History([("info", "drone_state"), ("info", "prev_action")]))
     #     transforms.append(History([("agents", "observation")]))
@@ -374,6 +378,7 @@ def main(cfg):
 
         # print("My print: ", data.to_tensordict)
         # return
+
         episode_stats.add(data.to_tensordict())
         # print(data.to_tensordict())
         # return

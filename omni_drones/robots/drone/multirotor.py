@@ -69,6 +69,7 @@ class MultirotorBase(RobotBase):
             self.params = yaml.safe_load(f)
         self.num_rotors = self.params["rotor_configuration"]["num_rotors"]
 
+        # param (low, high, shape)
         self.action_spec = BoundedTensorSpec(-1, 1, self.num_rotors, device=self.device)
         self.intrinsics_spec = CompositeSpec({
             "mass": UnboundedContinuousTensorSpec(1),

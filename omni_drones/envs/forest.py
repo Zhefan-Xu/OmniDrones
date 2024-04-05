@@ -119,6 +119,7 @@ class Forest(IsaacEnv):
             min(89., cfg.task.lidar_vfov[1])
         )
         self.lidar_range = cfg.task.lidar_range
+        # 将LIDAR sensor放到无人机上
         ray_caster_cfg = RayCasterCfg(
             prim_path="/World/envs/env_.*/Hummingbird_0/base_link",
             offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
@@ -133,7 +134,7 @@ class Forest(IsaacEnv):
         self.lidar._initialize_impl()
         self.lidar_resolution = (36, 4)
 
-        self.drone.initialize()
+        self.drone.initialize() # 初始化所有无人机的参数
         if "drone" in self.randomization:
             self.drone.setup_randomization(self.randomization["drone"])
         
@@ -163,8 +164,10 @@ class Forest(IsaacEnv):
         cfg = drone_model.cfg_cls(force_sensor=self.cfg.task.force_sensor)
         self.drone: MultirotorBase = drone_model(cfg=cfg)
 
+        # 在世界中加载一台无人机 prim path "/World/envs/env_0"
         drone_prim = self.drone.spawn(translations=[(0.0, 0.0, 2.)])[0]
 
+        # lighting
         light = AssetBaseCfg(
             prim_path="/World/light",
             spawn=sim_utils.DistantLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
@@ -177,6 +180,7 @@ class Forest(IsaacEnv):
         light.spawn.func(light.prim_path, light.spawn, light.init_state.pos, rot)
         sky_light.spawn.func(sky_light.prim_path, sky_light.spawn)
         
+        # 加载terrain
         terrain_cfg = TerrainImporterCfg(
             num_envs=self.num_envs,
             prim_path="/World/ground",
