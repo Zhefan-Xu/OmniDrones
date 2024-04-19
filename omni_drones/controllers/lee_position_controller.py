@@ -159,7 +159,9 @@ class LeePositionController(nn.Module):
             target_yaw.reshape(-1, 1),
             body_rate
         )
-
+        # print("target velocity from network: ", target_vel)
+        # print("target yaw is: ", target_yaw)
+        # print("computerd cmd: ", cmd)
         return cmd.reshape(*batch_shape, -1)
     
     def _compute(self, root_state, target_pos, target_vel, target_acc, target_yaw, body_rate):

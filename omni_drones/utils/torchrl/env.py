@@ -113,8 +113,8 @@ class EpisodeStats:
         done = next_tensordict.get("done")
         if done.any():
             done = done.squeeze(-1)
-            self._episodes += done.sum().item()
-            next_tensordict = next_tensordict.select(*self.in_keys)
+            self._episodes += done.sum().item() # count number of episodes
+            next_tensordict = next_tensordict.select(*self.in_keys) 
             self._stats.extend(next_tensordict[done].cpu().unbind(0))
         return len(self)
     

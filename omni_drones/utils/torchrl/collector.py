@@ -31,7 +31,6 @@ from tensordict.tensordict import TensorDictBase
 from typing import Iterator
 
 class SyncDataCollector(_SyncDataCollector):
-    # 使用提供的policy和env产生一条轨迹
     def rollout(self) -> TensorDictBase:
         start = time.perf_counter()
         _tensordict_out = super().rollout()
@@ -51,7 +50,7 @@ class SyncDataCollector(_SyncDataCollector):
         while True:
             i += 1
             self._iter = i
-            tensordict_out = self.rollout() # 产生轨迹tensordict_out
+            tensordict_out = self.rollout() # roll out trajectory
             self._frames += tensordict_out.numel() # numel gives total number of elements in the batch
             # if self._frames >= total_frames:
             #     self.env.close()

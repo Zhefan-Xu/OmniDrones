@@ -148,6 +148,7 @@ class PPOPolicy(TensorDictModuleBase):
         
         infos: TensorDict = torch.stack(infos).to_tensordict()
         infos = infos.apply(torch.mean, batch_size=[])
+        # print({k: v.item() for k, v in infos.items()})
         return {k: v.item() for k, v in infos.items()}
 
     def _update(self, tensordict: TensorDict):
@@ -388,7 +389,7 @@ def main(cfg):
                 for k, v in episode_stats.pop().items(True, True)
             }
             info.update(stats)
-
+            print("my info: ", info)
         info.update(policy.train_op(data.to_tensordict()))
 
         if eval_interval > 0 and i % eval_interval == 0:

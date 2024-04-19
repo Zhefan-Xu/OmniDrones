@@ -290,7 +290,7 @@ class MultirotorBase(RobotBase):
         return self.throttle.sum(-1)
 
     def get_state(self, check_nan: bool=False, env_frame: bool=True):
-        self.pos[:], self.rot[:] = self.get_world_poses(True)
+        self.pos[:], self.rot[:] = self.get_world_poses(True) # R3 in position and R4 in rotation quaternion
         if env_frame and hasattr(self, "_envs_positions"):
             self.pos.sub_(self._envs_positions)
         
@@ -307,6 +307,12 @@ class MultirotorBase(RobotBase):
         self.heading[:] = quat_axis(self.rot, axis=0)
         self.up[:] = quat_axis(self.rot, axis=2)
         state = [self.pos, self.rot, self.vel, self.heading, self.up, self.throttle * 2 - 1]
+        # print("pos: ", self.pos)
+        # print("rot: ", self.rot)
+        # print("vel: ", self.vel)
+        # print("heading: ", self.heading)
+        # print("up: ", self.up)
+        # print("throttle: ", self.throttle * 2 - 1)
         if self.use_force_sensor:
             self.force_readings, self.torque_readings = self.get_force_sensor_forces().chunk(2, -1)
             # normalize by mass and inertia
