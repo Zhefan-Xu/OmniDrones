@@ -215,15 +215,21 @@ class VelController(Transform):
     def __init__(
         self,
         controller,
+        yaw_control: bool = True,
         action_key: str = ("agents", "action"),
     ):
         super().__init__([], in_keys_inv=[("info", "drone_state")])
         self.controller = controller
+        self.yaw_control = yaw_control
         self.action_key = action_key
     
+
     def transform_input_spec(self, input_spec: TensorSpec) -> TensorSpec:
         action_spec = input_spec[("full_action_spec", *self.action_key)]
-        spec = UnboundedContinuousTensorSpec(action_spec.shape[:-1]+(4,), device=action_spec.device)
+        if (self.yaw_control):
+            spec = UnboundedContinuousTensorSpec(action_spec.shape[:-1]+(4,), device=action_spec.device)
+        else:
+            spec = UnboundedContinuousTensorSpec(action_spec.shape[:-1]+(3,), device=action_spec.device)
         input_spec[("full_action_spec", *self.action_key)] = spec
         return input_spec
     
@@ -234,9 +240,14 @@ class VelController(Transform):
         # print("drone state shape: ", drone_state.shape)
 
         action = tensordict[self.action_key]
-        target_vel, target_yaw = action.split([3, 1], -1)
-        target_vel = target_vel.unsqueeze(1)
-        target_yaw = target_yaw.unsqueeze(1)
+        if (self.yaw_control):
+            target_vel, target_yaw = action.split([3, 1], -1)
+            target_vel = target_vel.unsqueeze(1)
+            target_yaw = target_yaw.unsqueeze(1)
+        else:
+            target_vel = action.unsqueeze(1)
+            target_yaw = torch.zeros(action.shape[:-1] + (1,), device=action.device)
+        
         # print("droen vel shape: ", target_vel.shape)
         # print("target vel: ", target_vel)
         cmds = self.controller(
