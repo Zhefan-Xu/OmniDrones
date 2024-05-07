@@ -246,9 +246,10 @@ class VelController(Transform):
             target_yaw = target_yaw.unsqueeze(1)
         else:
             target_vel = action.unsqueeze(1)
+            # print("target vel: ", target_vel)
             target_yaw = torch.zeros(action.shape[:-1] + (1,), device=action.device)
         
-        # print("droen vel shape: ", target_vel.shape)
+        # print("drone vel shape: ", target_vel.shape)
         # print("target vel: ", target_vel)
         cmds = self.controller(
             drone_state, 
