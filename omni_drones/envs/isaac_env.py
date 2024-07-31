@@ -156,8 +156,8 @@ class IsaacEnv(EnvBase):
         central_env_pos = self.envs_positions[self.central_env_idx].cpu().numpy()
         # print("central env pos: ", central_env_pos)
         set_camera_view(
-            eye=central_env_pos + np.asarray(self.cfg.viewer.eye), 
-            target=central_env_pos + np.asarray(self.cfg.viewer.lookat)
+            eye=np.asarray(self.cfg.viewer.eye), 
+            target=np.asarray(self.cfg.viewer.lookat)
         )
         
         RobotBase._envs_positions = self.envs_positions.unsqueeze(1)
